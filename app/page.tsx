@@ -4,6 +4,9 @@ import { InputForm } from "@/components/common/Input";
 import { Mail, Lock } from 'lucide-react';
 import { Navbar } from '@/components/common/Navbar';
 
+import { ModeToggle } from "@/components/toggle-mode/ToggleMode";
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
   const [email, setEmail] = React.useState('')
 
@@ -12,6 +15,8 @@ export default function Home() {
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <h1>Hello World</h1>
         <Navbar />
+        <Button>Click Me</Button>
+        <ModeToggle />
       </main>
     </div>
   );
