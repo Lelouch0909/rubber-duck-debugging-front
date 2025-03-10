@@ -7,6 +7,7 @@ import { Navbar } from '@/components/common/Navbar';
 import { ModeToggle } from "@/components/toggle-mode/ToggleMode";
 import { Button } from "@/components/ui/button";
 
+
 export default function Home() {
   const [email, setEmail] = React.useState('')
 
