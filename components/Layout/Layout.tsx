@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { Navbar } from '@/components/common/Navbar';
+
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,3 +20,5 @@ export const Layout = ({ children }: LayoutProps) => {
     </div>
   );
 };
+export const Layout = ({ children }: LayoutProps) => <main className="flex-1">{children}</main>;
+
