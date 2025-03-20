@@ -74,7 +74,7 @@ cd rubber-duck-debugging-front
 Installer les dépendances :
 
 ```bash
-yarn install
+npm install
 ```
 
 Configurer l'environnement :
@@ -83,7 +83,7 @@ Les variables d environnement sont dans les secrets du depot.
 Démarrer le serveur de développement :
 
 ```bash
-yarn dev
+npm dev
 ```
 
 🤝 Contribution
@@ -112,8 +112,8 @@ CI/CD : Déploiement automatique via GitHub Actions
 Tests : Exécutez avant de pousser :
 
 ```bash
-yarn lint  # Vérification du code
-yarn test  # Exécution des tests
+npm lint  # Vérification du code
+npm test  # Exécution des tests
 ```
 
 📜 Licence

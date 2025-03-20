@@ -1,52 +1,37 @@
+'use client';
+
 import * as React from 'react';
 import { Btn } from './Button';
-import { LogOutIcon, Menu, SettingsIcon } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
-import { ModeToggle } from '../toggle-mode/ToggleMode';
 
-interface Props {
-  isSideBarOpen: boolean;
-  setIsSideBarOpen: (value: boolean) => void;
-  isSettingOpen: boolean;
-  setIsSettingOpen: (value: boolean) => void;
-}
+export const Navbar = () => {
+  const [isSideBarOpen, setIsSideBarOpen] = React.useState(false);
+  const [isSettingOpen, setIsSettingOpen] = React.useState(false);
 
-export const Navbar: React.FC<Props> = ({
-  isSideBarOpen,
-  setIsSideBarOpen,
-  isSettingOpen,
-  setIsSettingOpen,
-}) => (
-  <header className="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none">
-    <div className="max-w-8xl mx-auto px-4">
-      <div className="flex h-17 items-center justify-between">
-        <div className="flex items-center gap-5">
-          <Btn
-            variant="outline"
-            size="icon"
-            title={isSideBarOpen ? "Masquer l'explorateur" : "Afficher l'explorateur"}
-          >
-            <Menu className="h-6 w-6" />
-          </Btn>
-          <Link href="/" className="flex items-center hover-lift">
-            <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">DuckDown</span>
-          </Link>
-        </div>
-        <div className="flex items-center gap-3">
-          <ModeToggle />
-          <Btn
-            size={'icon'}
-            variant={'default'}
-            onClick={() => setIsSettingOpen(true)}
-            title="Paramètre"
-          >
-            <SettingsIcon className="h-5 w-5" />
-          </Btn>
-          <Btn title="Se déconnecter" size={'icon'}>
-            <LogOutIcon className="h-5 w-5" />
-          </Btn>
+  return (
+    <header className="bg-white dark:bg-gray-800 shadow-sm py-2 px-4 sm:px-6 lg:px-8 z-50">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex h-17 items-center justify-between">
+          <div className="flex items-center gap-5">
+            <Btn
+              variant="outline"
+              size="icon"
+              title={isSideBarOpen ? "Masquer l'explorateur" : "Afficher l'explorateur"}
+            >
+              <Menu className="h-6 w-6" />
+            </Btn>
+            <div className="p-4">
+              <div className="container mx-auto flex items-center justify-center md:justify-start">
+                <span role="img" aria-label="Rubber Duck" className="text-3xl hover:animate-bounce">
+                  🦆
+                </span>
+                <h1 className="text-2xl font-bold ml-2">DuckDown</h1>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </header>
-);
+    </header>
+  );
+};

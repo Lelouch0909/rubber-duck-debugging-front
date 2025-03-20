@@ -2,10 +2,10 @@ import React from 'react';
 import { Button, ButtonProps } from '@/components/ui/button';
 
 interface Props extends ButtonProps {
-  title: string;
+  title?: string;
   asChild?: boolean;
   children: React.ReactNode;
-  handleClick?: () => void;
+  handleClick?: () => {};
 }
 
 export const Btn = (props: Props) => {
