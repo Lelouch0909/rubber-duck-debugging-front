@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable}  flex flex-col bg-background text-foreground overflow-x-hidden subpixel-antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex flex-col bg-background text-foreground overflow-x-hidden subpixel-antialiased`}
       >
         <ThemeProvider
           attribute="class"
@@ -35,7 +35,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Layout>{children}</Layout>
+          {children}
         </ThemeProvider>
       </body>
     </html>
