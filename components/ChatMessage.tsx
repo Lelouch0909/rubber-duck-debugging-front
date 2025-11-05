@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from "next/image";
+import {DuckAnimation} from "@/components/DuckAnimation";
 
 const ChatMessage = ({message} : { message: Message }) => {
     return (
@@ -10,14 +11,9 @@ const ChatMessage = ({message} : { message: Message }) => {
             <div className={"shrink-0"}>
                 {message.role === 'assistant' ? (
                     <div
-                        className={"w-10 h-10 rounded-full bg-marker flex items-center justify-center"}>
-                        <Image
-                            src="/rubberduck_logo.png"
-                            width={28}
-                            height={28}
-                            alt="Assistant"
-                            className={"rounded-full"}
-                        />
+                        className={"w-10 h-10 rounded-full flex items-center justify-center"}>
+                        <DuckAnimation size={'sm'}></DuckAnimation>
+
                     </div>
                 ) : (
                     <div

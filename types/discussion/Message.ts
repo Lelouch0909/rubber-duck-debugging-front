@@ -1,5 +1,5 @@
 interface Message {
-    id : string;
+    id : number;
     content: string;
     role: 'user' | 'assistant' ;
     timestamp : string;
