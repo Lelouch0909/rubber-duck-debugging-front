@@ -1,6 +1,6 @@
 import React from 'react';
-import {CustomProps} from "@/types/common/CustomProps";
-import type {Metadata} from "next";
+import { CustomProps } from "@/types/common/CustomProps";
+import type { Metadata } from "next";
 
 
 export const metadata: Metadata = {
@@ -16,11 +16,11 @@ export const metadata: Metadata = {
 
 };
 
-function Layout({children}: CustomProps) {
+function Layout({ children }: CustomProps) {
 
 
     return (
-        <div className="notebooks-layout">
+        <div className="notebooks-layout h-screen w-screen overflow-hidden bg-background">
             {children}
         </div>
     );

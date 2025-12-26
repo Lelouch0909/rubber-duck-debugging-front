@@ -1,9 +1,9 @@
-
-interface Note {
-    id: number;
+export interface Note {
+    id: string;
     title: string;
-    content: string;
+    content: string;  // Markdown content
     tags: string[];
-    time: string;
+    createdAt: string;  // ISO date
+    updatedAt: string;  // ISO date
     isNew?: boolean;
 }

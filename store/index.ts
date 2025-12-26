@@ -2,12 +2,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import chatReducer from './slices/chatSlice';
 import uiReducer from './slices/uiSlice';
+import notebookReducer from './slices/notebookSlice';
 import { apiSlice } from './slices/apiSlice';
 
 export const store = configureStore({
     reducer: {
         chat: chatReducer,
         ui: uiReducer,
+        notebook: notebookReducer,
         [apiSlice.reducerPath]: apiSlice.reducer,
     },
     middleware: (getDefaultMiddleware) =>

@@ -1,9 +1,10 @@
+'use client';
 import React from 'react';
-import {CustomProps} from "@/types/common/CustomProps";
+import { NotebookDashboard } from '@/components/notebook';
 
-function Page(props: CustomProps) {
+function Page() {
     return (
-        <div>NoteBook</div>
+        <NotebookDashboard />
     );
 }
 

@@ -35,12 +35,48 @@
 
 /* Classe .light pour forcer le thème clair manuellement */
 .light {
-
+  --font-size: 16px;
+  --background: #F8FAFC;
+  --secondary: #E2E8F0;
+  --foreground: #F1F5F9;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+  --primary: #1E293B;
+  --primary-foreground: #FFFFFF;
+  --secondary-foreground: #475569;
+  --muted: #E2E8F0;
+  --muted-foreground: #64748B;
+  --accent: #F1F5F9;
+  --accent-foreground: #1E293B;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --card-active: #FEF3C7;
+  --marker: oklch(.65 .18 80);
+  --markerHover: oklch(.55 .16 75);
 }
 
 /* Classe .dark pour forcer le thème sombre manuellement */
 .dark {
-
+  --font-size: 16px;
+  --background: #1E2939;
+  --secondary: oklch(.21 .034 264.665);
+  --foreground: #101828;
+  --card: #364153;
+  --card-foreground: #101828;
+  --popover: oklch(1 0 0);
+  --popover-foreground: #101828;
+  --primary: #ffffff;
+  --primary-foreground: oklch(1 0 0);
+  --secondary-foreground: #030213;
+  --muted: #4A5565;
+  --muted-foreground: #6A7282;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --card-active: #48442E;
 }
 
 
