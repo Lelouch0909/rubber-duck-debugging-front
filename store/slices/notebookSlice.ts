@@ -82,6 +82,25 @@ const mockNotes: Note[] = [
         createdAt: new Date(Date.now() - 200000000).toISOString(),
         updatedAt: new Date(Date.now() - 200000000).toISOString(),
     },
+    // Orphan notes (no group)
+    {
+        id: '7',
+        title: 'Git Workflow',
+        content: '## Git\n\nGestion de versions avec Git et GitHub.',
+        tags: ['Git', 'DevOps'],
+        // No groupId - this is an orphan note
+        createdAt: new Date(Date.now() - 50000000).toISOString(),
+        updatedAt: new Date(Date.now() - 50000000).toISOString(),
+    },
+    {
+        id: '8',
+        title: 'Clean Code Principles',
+        content: '## Clean Code\n\nPrincipes de code propre et maintenable.',
+        tags: ['Best Practices'],
+        // No groupId - this is an orphan note
+        createdAt: new Date(Date.now() - 60000000).toISOString(),
+        updatedAt: new Date(Date.now() - 60000000).toISOString(),
+    },
 ];
 
 // Mock connections based on tags similarity
@@ -90,6 +109,12 @@ const mockConnections: NoteConnection[] = [
     { sourceId: '1', targetId: '3', similarity: 4 },
     { sourceId: '2', targetId: '3', similarity: 7 },
     { sourceId: '3', targetId: '4', similarity: 2 },
+    // Inter-group connections
+    { sourceId: '1', targetId: '5', similarity: 3 },  // Frontend -> Backend
+    { sourceId: '5', targetId: '6', similarity: 5 },  // Backend -> DevOps
+    // Orphan connections
+    { sourceId: '7', targetId: '8', similarity: 4 },  // Git -> Clean Code
+    { sourceId: '6', targetId: '7', similarity: 6 },  // Docker -> Git
 ];
 
 const initialState: NotebookState = {

@@ -152,9 +152,13 @@ function NotebookDashboard() {
                         />
                     ) : (
                         <ListView
-                            notes={filteredNotes}
+                            notes={notes}
+                            groups={groups}
                             selectedNoteId={selectedNoteId}
+                            selectedGroupId={selectedGroupId}
                             onNoteClick={handleNoteClick}
+                            onGroupClick={handleGroupClick}
+                            onBackToGroups={handleBackToGalaxies}
                             searchQuery={searchQuery}
                         />
                     )}
