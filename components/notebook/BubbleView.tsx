@@ -1,12 +1,15 @@
 'use client';
 import React, { useMemo, useRef, useEffect, useState, useCallback } from 'react';
-import { Note, NoteConnection } from '@/types/notebook';
+import { Note, NoteConnection, NoteGroup } from '@/types/notebook';
 
 interface BubbleViewProps {
     notes: Note[];
+    groups: NoteGroup[];
     connections: NoteConnection[];
     selectedNoteId: string | null;
+    selectedGroupId: string | null;
     onNoteClick: (noteId: string) => void;
+    onGroupClick: (groupId: string) => void;
     searchQuery: string;
 }
 
@@ -39,11 +42,57 @@ interface BubblePosition {
     radius: number;
 }
 
+// Stars component - renders only on client side to avoid hydration mismatch
+function Stars() {
+    const [stars, setStars] = useState<Array<{ left: string; top: string; opacity: number; delay: string; duration: string }>>([]);
+
+    useEffect(() => {
+        const generatedStars = [...Array(50)].map(() => ({
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            opacity: Math.random() * 0.5 + 0.2,
+            delay: `${Math.random() * 3}s`,
+            duration: `${2 + Math.random() * 2}s`,
+        }));
+        setStars(generatedStars);
+    }, []);
+
+    if (stars.length === 0) return null;
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {stars.map((star, i) => (
+                <div
+                    key={i}
+                    className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                    style={{
+                        left: star.left,
+                        top: star.top,
+                        opacity: star.opacity,
+                        animationDelay: star.delay,
+                        animationDuration: star.duration,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
+
 const MIN_RADIUS = 50;
 const MAX_RADIUS = 100;
+const GALAXY_RADIUS = 120;
 const CANVAS_SIZE = 3000;
 
-function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQuery }: BubbleViewProps) {
+function BubbleView({
+    notes,
+    groups,
+    connections,
+    selectedNoteId,
+    selectedGroupId,
+    onNoteClick,
+    onGroupClick,
+    searchQuery
+}: BubbleViewProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
 
@@ -60,8 +109,11 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
     // Exploding bubble state
     const [explodedId, setExplodedId] = useState<string | null>(null);
 
-    // Custom positions for bubbles
+    // Custom positions for bubbles/galaxies
     const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>({});
+
+    // Determine if we're in galaxy view or note view
+    const isGalaxyView = selectedGroupId === null;
 
     // Filter notes based on search query
     const filteredNotes = useMemo(() => {
@@ -92,19 +144,44 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
 
     // Calculate bubble radius based on content size and connections
     const calculateRadius = useCallback((note: Note): number => {
-        const contentScore = Math.min(note.content.length / 500, 1); // 0-1 based on content
-        const connectionScore = Math.min((connectionCounts[note.id] || 0) / 5, 1); // 0-1 based on connections
+        const contentScore = Math.min(note.content.length / 500, 1);
+        const connectionScore = Math.min((connectionCounts[note.id] || 0) / 5, 1);
         const combinedScore = (contentScore * 0.6 + connectionScore * 0.4);
         return MIN_RADIUS + combinedScore * (MAX_RADIUS - MIN_RADIUS);
     }, [connectionCounts]);
 
-    // Calculate initial bubble positions
-    const initialPositions = useMemo((): Record<string, BubblePosition> => {
+    // Calculate galaxy positions (for galaxy view)
+    const galaxyPositions = useMemo((): Record<string, BubblePosition> => {
         const positions: Record<string, BubblePosition> = {};
         const centerX = CANVAS_SIZE / 2;
         const centerY = CANVAS_SIZE / 2;
 
-        // Sort by date (most recent first)
+        groups.forEach((group, index) => {
+            const notesInGroup = notes.filter(n => n.groupId === group.id).length;
+            const radius = GALAXY_RADIUS + Math.min(notesInGroup * 5, 30);
+
+            if (index === 0) {
+                positions[group.id] = { x: centerX, y: centerY, radius };
+            } else {
+                const angle = (2 * Math.PI * (index - 1)) / Math.max(groups.length - 1, 1);
+                const radiusOffset = 350 + Math.floor((index - 1) / 4) * 250;
+                positions[group.id] = {
+                    x: centerX + radiusOffset * Math.cos(angle),
+                    y: centerY + radiusOffset * Math.sin(angle),
+                    radius,
+                };
+            }
+        });
+
+        return positions;
+    }, [groups, notes]);
+
+    // Calculate note positions (for note view inside a galaxy)
+    const notePositions = useMemo((): Record<string, BubblePosition> => {
+        const positions: Record<string, BubblePosition> = {};
+        const centerX = CANVAS_SIZE / 2;
+        const centerY = CANVAS_SIZE / 2;
+
         const sortedNotes = [...filteredNotes].sort(
             (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
@@ -127,18 +204,41 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
         return positions;
     }, [filteredNotes, calculateRadius]);
 
-    // Merge custom positions with initial positions
+    // Merge custom positions
     const bubblePositions = useMemo((): Record<string, BubblePosition> => {
+        const basePositions = isGalaxyView ? galaxyPositions : notePositions;
         const merged: Record<string, BubblePosition> = {};
-        for (const noteId in initialPositions) {
-            if (customPositions[noteId]) {
-                merged[noteId] = { ...initialPositions[noteId], ...customPositions[noteId] };
+        for (const id in basePositions) {
+            if (customPositions[id]) {
+                merged[id] = { ...basePositions[id], ...customPositions[id] };
             } else {
-                merged[noteId] = initialPositions[noteId];
+                merged[id] = basePositions[id];
             }
         }
         return merged;
-    }, [initialPositions, customPositions]);
+    }, [isGalaxyView, galaxyPositions, notePositions, customPositions]);
+
+    // Reset transform and custom positions when switching views
+    useEffect(() => {
+        setCustomPositions({});
+        setExplodedId(null);
+
+        const items = isGalaxyView ? groups : filteredNotes;
+        if (items.length > 0 && containerSize.width > 0) {
+            const firstItemId = isGalaxyView ? groups[0]?.id : filteredNotes[0]?.id;
+            const positions = isGalaxyView ? galaxyPositions : notePositions;
+            const pos = positions[firstItemId];
+
+            if (pos) {
+                setTransform({
+                    x: containerSize.width / 2 - pos.x,
+                    y: containerSize.height / 2 - pos.y,
+                    scale: 1,
+                });
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedGroupId, containerSize.width]);
 
     // Update container size on resize
     useEffect(() => {
@@ -155,46 +255,40 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
         return () => window.removeEventListener('resize', updateSize);
     }, []);
 
-    // Center view on most recent note on initial load
+    // Prevent browser zoom on the container
     useEffect(() => {
-        if (filteredNotes.length > 0 && containerSize.width > 0) {
-            const sortedNotes = [...filteredNotes].sort(
-                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-            );
-            const mostRecentId = sortedNotes[0].id;
-            const pos = bubblePositions[mostRecentId];
+        const container = containerRef.current;
+        if (!container) return;
 
-            if (pos) {
-                setTransform({
-                    x: containerSize.width / 2 - pos.x,
-                    y: containerSize.height / 2 - pos.y,
-                    scale: 1,
-                });
+        const preventBrowserZoom = (e: WheelEvent) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
             }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filteredNotes.length, containerSize.width]);
+        };
+
+        container.addEventListener('wheel', preventBrowserZoom, { passive: false });
+        return () => {
+            container.removeEventListener('wheel', preventBrowserZoom);
+        };
+    }, []);
 
     // Handle wheel - 2 finger trackpad = pan, ctrl+wheel or pinch = zoom
     const handleWheel = useCallback((e: React.WheelEvent) => {
         e.preventDefault();
 
-        // Check if it's a pinch zoom (ctrl key) or regular scroll (2 finger pan)
         if (e.ctrlKey || e.metaKey) {
-            // Pinch zoom
             const delta = e.deltaY > 0 ? 0.95 : 1.05;
             const newScale = Math.min(Math.max(transform.scale * delta, 0.3), 3);
 
             const rect = containerRef.current?.getBoundingClientRect();
             if (rect) {
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-                const newX = mouseX - (mouseX - transform.x) * (newScale / transform.scale);
-                const newY = mouseY - (mouseY - transform.y) * (newScale / transform.scale);
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const newX = centerX - (centerX - transform.x) * (newScale / transform.scale);
+                const newY = centerY - (centerY - transform.y) * (newScale / transform.scale);
                 setTransform({ x: newX, y: newY, scale: newScale });
             }
         } else {
-            // Two finger pan
             setTransform(prev => ({
                 ...prev,
                 x: prev.x - e.deltaX,
@@ -241,12 +335,11 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
     const handleMouseUp = useCallback(() => {
         setIsPanning(false);
         setDraggingId(null);
-        // Reset hasDragged after a short delay to allow click detection
         setTimeout(() => setHasDragged(false), 50);
     }, []);
 
-    // Handle bubble drag start
-    const handleBubbleMouseDown = useCallback((e: React.MouseEvent, noteId: string, pos: BubblePosition) => {
+    // Handle bubble/galaxy drag start
+    const handleBubbleMouseDown = useCallback((e: React.MouseEvent, id: string, pos: BubblePosition) => {
         e.stopPropagation();
         setHasDragged(false);
 
@@ -255,7 +348,7 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
             const canvasX = (e.clientX - rect.left - transform.x) / transform.scale;
             const canvasY = (e.clientY - rect.top - transform.y) / transform.scale;
 
-            setDraggingId(noteId);
+            setDraggingId(id);
             setDragOffset({
                 x: canvasX - pos.x,
                 y: canvasY - pos.y,
@@ -263,18 +356,30 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
         }
     }, [transform]);
 
-    // Handle bubble click - only trigger if not dragged
-    const handleBubbleClick = useCallback((e: React.MouseEvent, noteId: string) => {
+    // Handle galaxy click
+    const handleGalaxyClick = useCallback((e: React.MouseEvent, groupId: string) => {
         e.stopPropagation();
+        if (hasDragged) return;
 
+        if (explodedId === groupId) {
+            // Second click - enter the galaxy
+            setExplodedId(null);
+            onGroupClick(groupId);
+        } else {
+            // First click - explode to show preview
+            setExplodedId(groupId);
+        }
+    }, [hasDragged, explodedId, onGroupClick]);
+
+    // Handle note click
+    const handleNoteClick = useCallback((e: React.MouseEvent, noteId: string) => {
+        e.stopPropagation();
         if (hasDragged) return;
 
         if (explodedId === noteId) {
-            // Second click - open editor
             setExplodedId(null);
             onNoteClick(noteId);
         } else {
-            // First click - explode bubble
             setExplodedId(noteId);
         }
     }, [hasDragged, explodedId, onNoteClick]);
@@ -290,11 +395,10 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
     const zoomIn = () => setTransform(prev => ({ ...prev, scale: Math.min(prev.scale * 1.2, 3) }));
     const zoomOut = () => setTransform(prev => ({ ...prev, scale: Math.max(prev.scale / 1.2, 0.3) }));
     const resetView = () => {
-        if (filteredNotes.length > 0) {
-            const sortedNotes = [...filteredNotes].sort(
-                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-            );
-            const pos = bubblePositions[sortedNotes[0].id];
+        const items = isGalaxyView ? groups : filteredNotes;
+        if (items.length > 0) {
+            const firstItemId = isGalaxyView ? groups[0]?.id : filteredNotes[0]?.id;
+            const pos = bubblePositions[firstItemId];
             if (pos) {
                 setTransform({
                     x: containerSize.width / 2 - pos.x,
@@ -308,7 +412,22 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
     // Get gradient for note based on its index
     const getGradient = (index: number) => BUBBLE_GRADIENTS[index % BUBBLE_GRADIENTS.length];
 
-    if (filteredNotes.length === 0) {
+    // Empty state
+    if (isGalaxyView && groups.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 opacity-30 animate-pulse mb-6" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                    Aucune galaxie
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                    Créez votre première galaxie pour organiser vos notes !
+                </p>
+            </div>
+        );
+    }
+
+    if (!isGalaxyView && filteredNotes.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 opacity-30 animate-pulse mb-6" />
@@ -337,7 +456,7 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
             onWheel={handleWheel}
             onClick={handleCanvasClick}
         >
-            {/* Stars background - generated client-side only to avoid hydration mismatch */}
+            {/* Stars background */}
             <Stars />
 
             {/* Zoom controls */}
@@ -371,39 +490,146 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
                     height: CANVAS_SIZE,
                 }}
             >
-                {/* SVG for connection lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
-                    {filteredConnections.map((connection) => {
-                        const source = bubblePositions[connection.sourceId];
-                        const target = bubblePositions[connection.targetId];
-                        if (!source || !target) return null;
+                {/* SVG for connection lines (only in note view) */}
+                {!isGalaxyView && (
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+                        {filteredConnections.map((connection) => {
+                            const source = bubblePositions[connection.sourceId];
+                            const target = bubblePositions[connection.targetId];
+                            if (!source || !target) return null;
 
-                        const color = getConnectionColor(connection.similarity);
-                        const midX = (source.x + target.x) / 2;
-                        const midY = (source.y + target.y) / 2;
+                            const color = getConnectionColor(connection.similarity);
+                            const midX = (source.x + target.x) / 2;
+                            const midY = (source.y + target.y) / 2;
 
-                        return (
-                            <g key={`${connection.sourceId}-${connection.targetId}`}>
-                                <line
-                                    x1={source.x}
-                                    y1={source.y}
-                                    x2={target.x}
-                                    y2={target.y}
-                                    stroke={color}
-                                    strokeWidth={2 + connection.similarity / 3}
-                                    className="drop-shadow-lg"
-                                />
-                                <circle cx={midX} cy={midY} r="16" fill="rgba(0,0,0,0.6)" />
-                                <text x={midX} y={midY + 5} textAnchor="middle" fill="white" fontSize="12" fontWeight="600">
-                                    {connection.similarity}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </svg>
+                            return (
+                                <g key={`${connection.sourceId}-${connection.targetId}`}>
+                                    <line
+                                        x1={source.x}
+                                        y1={source.y}
+                                        x2={target.x}
+                                        y2={target.y}
+                                        stroke={color}
+                                        strokeWidth={2 + connection.similarity / 3}
+                                        className="drop-shadow-lg"
+                                    />
+                                    <circle cx={midX} cy={midY} r="16" fill="rgba(0,0,0,0.6)" />
+                                    <text x={midX} y={midY + 5} textAnchor="middle" fill="white" fontSize="12" fontWeight="600">
+                                        {connection.similarity}
+                                    </text>
+                                </g>
+                            );
+                        })}
+                    </svg>
+                )}
 
-                {/* Bubble nodes */}
-                {filteredNotes.map((note, index) => {
+                {/* Galaxy nodes (galaxy view) */}
+                {isGalaxyView && groups.map((group, index) => {
+                    const pos = bubblePositions[group.id];
+                    if (!pos) return null;
+
+                    const isDragging = draggingId === group.id;
+                    const isExploded = explodedId === group.id;
+                    const notesInGroup = notes.filter(n => n.groupId === group.id);
+
+                    return (
+                        <div
+                            key={group.id}
+                            onMouseDown={(e) => handleBubbleMouseDown(e, group.id, pos)}
+                            onClick={(e) => handleGalaxyClick(e, group.id)}
+                            className={`absolute rounded-full ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'} ${!isDragging ? 'transition-all duration-500' : ''} ${isExploded ? 'z-50' : 'z-10'}`}
+                            style={{
+                                left: pos.x - (isExploded ? 180 : pos.radius),
+                                top: pos.y - (isExploded ? 120 : pos.radius),
+                                width: isExploded ? 360 : pos.radius * 2,
+                                height: isExploded ? 240 : pos.radius * 2,
+                                borderRadius: isExploded ? '24px' : '50%',
+                                background: isExploded
+                                    ? 'rgba(20, 20, 40, 0.95)'
+                                    : group.color,
+                                boxShadow: isExploded
+                                    ? '0 0 80px rgba(147, 51, 234, 0.6), 0 0 160px rgba(79, 70, 229, 0.4)'
+                                    : `0 0 ${40 + pos.radius / 2}px rgba(255,255,255,0.3), inset 0 0 ${pos.radius}px rgba(255,255,255,0.15)`,
+                                border: isExploded
+                                    ? '2px solid rgba(147, 51, 234, 0.8)'
+                                    : '3px solid rgba(255,255,255,0.3)',
+                                animationName: isExploded ? 'explode' : isDragging ? 'none' : 'galaxy-rotate, galaxy-glow',
+                                animationDuration: isExploded ? '0.5s' : '20s, 3s',
+                                animationTimingFunction: 'ease-in-out',
+                                animationIterationCount: isExploded ? '1' : 'infinite',
+                                animationFillMode: isExploded ? 'forwards' : 'none',
+                                animationDelay: `${index * 0.5}s`,
+                            }}
+                            title={group.name}
+                        >
+                            {isExploded ? (
+                                // Exploded galaxy view
+                                <div className="p-6 h-full flex flex-col text-white overflow-hidden">
+                                    <h3 className="font-bold text-xl mb-3">{group.name}</h3>
+                                    <p className="text-sm text-white/70 mb-4">
+                                        {notesInGroup.length} note{notesInGroup.length > 1 ? 's' : ''}
+                                    </p>
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="flex flex-wrap gap-2">
+                                            {notesInGroup.slice(0, 4).map(note => (
+                                                <span key={note.id} className="text-xs px-3 py-1 bg-white/20 rounded-full truncate max-w-[120px]">
+                                                    {note.title}
+                                                </span>
+                                            ))}
+                                            {notesInGroup.length > 4 && (
+                                                <span className="text-xs px-3 py-1 bg-white/10 rounded-full">
+                                                    +{notesInGroup.length - 4}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-white/50 mt-3">Cliquez pour entrer</p>
+                                </div>
+                            ) : (
+                                // Galaxy view
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
+                                    {/* Galaxy spiral effect */}
+                                    <div className="absolute inset-0 rounded-full overflow-hidden">
+                                        <div
+                                            className="absolute inset-0"
+                                            style={{
+                                                background: `
+                                                    radial-gradient(ellipse 80% 50% at 50% 50%, transparent 30%, rgba(255,255,255,0.1) 60%, transparent 70%),
+                                                    radial-gradient(ellipse 50% 80% at 50% 50%, transparent 30%, rgba(255,255,255,0.1) 60%, transparent 70%)
+                                                `,
+                                                animation: 'galaxy-spiral 15s linear infinite',
+                                            }}
+                                        />
+                                    </div>
+                                    <span
+                                        className="font-bold text-center leading-tight drop-shadow-lg relative z-10"
+                                        style={{ fontSize: `${Math.max(14, pos.radius / 4)}px` }}
+                                    >
+                                        {group.name}
+                                    </span>
+                                    <span className="text-xs mt-2 opacity-70 bg-black/30 px-3 py-1 rounded-full relative z-10">
+                                        {notesInGroup.length} note{notesInGroup.length > 1 ? 's' : ''}
+                                    </span>
+                                    {/* Outer glow ring */}
+                                    <div
+                                        className="absolute inset-0 rounded-full pointer-events-none"
+                                        style={{
+                                            border: '2px solid rgba(255,255,255,0.4)',
+                                            animationName: 'bubble-ring',
+                                            animationDuration: '4s',
+                                            animationTimingFunction: 'ease-in-out',
+                                            animationIterationCount: 'infinite',
+                                            animationDelay: `${index * 0.7}s`,
+                                        }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {/* Note bubbles (note view inside a galaxy) */}
+                {!isGalaxyView && filteredNotes.map((note, index) => {
                     const pos = bubblePositions[note.id];
                     if (!pos) return null;
 
@@ -415,9 +641,8 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
                         <div
                             key={note.id}
                             onMouseDown={(e) => handleBubbleMouseDown(e, note.id, pos)}
-                            onClick={(e) => handleBubbleClick(e, note.id)}
-                            className={`absolute rounded-full transition-all duration-500 ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'
-                                } ${isExploded ? 'z-50' : isSelected ? 'z-30' : 'z-10'}`}
+                            onClick={(e) => handleNoteClick(e, note.id)}
+                            className={`absolute rounded-full ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'} ${!isDragging ? 'transition-all duration-500' : ''} ${isExploded ? 'z-50' : isSelected ? 'z-30' : 'z-10'}`}
                             style={{
                                 left: pos.x - (isExploded ? 150 : pos.radius),
                                 top: pos.y - (isExploded ? 100 : pos.radius),
@@ -435,17 +660,20 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
                                     : isSelected
                                         ? '3px solid rgba(255, 215, 0, 0.8)'
                                         : '2px solid rgba(255,255,255,0.2)',
-                                animation: isExploded
-                                    ? 'explode 0.5s ease-out forwards'
+                                animationName: isExploded
+                                    ? 'explode'
                                     : isDragging
                                         ? 'none'
-                                        : 'bubble-breathe 4s ease-in-out infinite, bubble-glow 2s ease-in-out infinite',
+                                        : 'bubble-breathe, bubble-glow',
+                                animationDuration: isExploded ? '0.5s' : '4s, 2s',
+                                animationTimingFunction: 'ease-in-out',
+                                animationIterationCount: isExploded ? '1' : 'infinite',
+                                animationFillMode: isExploded ? 'forwards' : 'none',
                                 animationDelay: `${index * 0.3}s`,
                             }}
                             title={note.title}
                         >
                             {isExploded ? (
-                                // Exploded content view
                                 <div className="p-4 h-full flex flex-col text-white overflow-hidden">
                                     <h3 className="font-bold text-lg mb-2 truncate">{note.title}</h3>
                                     <p className="text-sm text-white/80 flex-1 overflow-hidden line-clamp-4">
@@ -459,7 +687,6 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
                                     <p className="text-xs text-white/50 mt-2">Cliquez pour éditer</p>
                                 </div>
                             ) : (
-                                // Bubble view
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-3">
                                     <span
                                         className="font-bold text-center leading-tight drop-shadow-lg"
@@ -472,12 +699,14 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
                                             {note.tags[0]}
                                         </span>
                                     )}
-                                    {/* Glow ring */}
                                     <div
                                         className="absolute inset-0 rounded-full pointer-events-none"
                                         style={{
                                             border: '2px solid rgba(255,255,255,0.4)',
-                                            animation: 'bubble-ring 3s ease-in-out infinite',
+                                            animationName: 'bubble-ring',
+                                            animationDuration: '3s',
+                                            animationTimingFunction: 'ease-in-out',
+                                            animationIterationCount: 'infinite',
                                             animationDelay: `${index * 0.5}s`,
                                         }}
                                     />
@@ -507,11 +736,24 @@ function BubbleView({ notes, connections, selectedNoteId, onNoteClick, searchQue
                     50% { transform: scale(1.1); }
                     100% { transform: scale(1); opacity: 1; }
                 }
+                @keyframes galaxy-rotate {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                @keyframes galaxy-glow {
+                    0%, 100% { filter: brightness(1) saturate(1.2) hue-rotate(0deg); }
+                    50% { filter: brightness(1.3) saturate(1.4) hue-rotate(10deg); }
+                }
+                @keyframes galaxy-spiral {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
             `}</style>
 
             {/* Instructions */}
             <div className="absolute bottom-4 left-4 z-30 text-xs text-white/60 bg-black/40 backdrop-blur-sm px-4 py-2 rounded-xl">
-                <span className="font-medium">2 doigts:</span> Déplacer • <span className="font-medium">Pincer:</span> Zoom • <span className="font-medium">Bulle:</span> Clic = voir, 2e clic = éditer
+                <span className="font-medium">2 doigts:</span> Déplacer • <span className="font-medium">Pincer:</span> Zoom •
+                <span className="font-medium"> {isGalaxyView ? 'Galaxie' : 'Bulle'}:</span> Clic = voir, 2e clic = {isGalaxyView ? 'entrer' : 'éditer'}
             </div>
         </div>
     );
