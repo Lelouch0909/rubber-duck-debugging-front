@@ -3,9 +3,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useChatRedux } from './useChatRedux';
 import { useGetAssistantResponseMutation } from '@/store/slices/apiSlice';
 
+import { signIn, useSession } from "next-auth/react";
+
 export const useChatSendRedux = () => {
     const pathname = usePathname();
     const router = useRouter();
+    const { data: session } = useSession();
     const {
         createChat,
         addMessage,
@@ -20,6 +23,12 @@ export const useChatSendRedux = () => {
     const lastMessageTimeRef = useRef(0);
 
     const handleSend = useCallback(async (content: string) => {
+        // Enforce authentication
+        if (!session) {
+            await signIn("keycloak");
+            return;
+        }
+
         // Éviter les doubles envois rapides (debounce de 500ms)
         const now = Date.now();
         if (now - lastMessageTimeRef.current < 500) {
@@ -137,7 +146,9 @@ export const useChatSendRedux = () => {
         generateMessageId,
         setIsTyping,
         setIsSending,
+        setIsSending,
         getAssistantResponse,
+        session,
     ]);
 
     return handleSend;

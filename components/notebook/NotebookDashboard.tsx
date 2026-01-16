@@ -1,7 +1,9 @@
 'use client';
 import React, { useCallback } from 'react';
+import { useSession, signIn } from "next-auth/react";
 import { Note } from '@/types/notebook';
 import { useAppDispatch, useAppSelector } from '@/store';
+import AuthButtons from "@/components/auth/AuthButtons";
 import {
     setViewMode,
     setSelectedNote,
@@ -22,6 +24,7 @@ import NoteEditor from './NoteEditor';
 import AddButton from '@/components/buttons/AddButton';
 
 function NotebookDashboard() {
+    const { data: session } = useSession();
     const dispatch = useAppDispatch();
     const {
         notes,
@@ -63,12 +66,16 @@ function NotebookDashboard() {
     }, [dispatch]);
 
     const handleAddNote = useCallback(() => {
+        if (!session) {
+            signIn("keycloak");
+            return;
+        }
         dispatch(addNote({
             title: 'Nouvelle note',
             content: '',
             tags: [],
         }));
-    }, [dispatch]);
+    }, [dispatch, session]);
 
     const handleSaveNote = useCallback((updates: Partial<Note>) => {
         if (selectedNoteId) {
@@ -133,6 +140,7 @@ function NotebookDashboard() {
                                 className="w-full px-4 py-2 bg-muted border border-muted rounded-lg text-sm focus:outline-none focus:border-marker transition-colors"
                             />
                         </div>
+                        <AuthButtons />
                         {selectedGroupId && <AddButton onClickEvent={handleAddNote} />}
                     </div>
                 </div>
@@ -167,12 +175,13 @@ function NotebookDashboard() {
                 {/* Stats bar */}
                 <div className="flex items-center justify-between px-4 py-2 border-t border-muted text-xs text-muted-foreground">
                     <span>
-                        {selectedGroupId
+                        {session && (selectedGroupId
                             ? `${filteredNotes.length} notes dans ${currentGroup?.name}`
                             : `${groups.length} galaxies • ${notes.length} notes`
-                        }
+                        )}
+                        {!session && "0 notes"}
                     </span>
-                    <span>{connections.length} connexions</span>
+                    <span>{session ? connections.length : 0} connexions</span>
                     <span>Vue: {viewMode === 'bubble' ? 'Bulles' : 'Liste'}</span>
                 </div>
             </div>

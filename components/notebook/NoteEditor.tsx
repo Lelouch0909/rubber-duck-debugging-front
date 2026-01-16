@@ -83,7 +83,7 @@ function NoteEditor({ note, availableTags, onSave, onDelete, onClose, onAddTag }
     if (!note) {
         return (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-                Sélectionnez une note pour l'éditer
+                Sélectionnez une note pour l&apos;éditer
             </div>
         );
     }

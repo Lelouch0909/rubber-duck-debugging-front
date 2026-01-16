@@ -7,10 +7,11 @@ import TypingIndicator from "@/components/TypingIndicator";
 import { useChatRedux } from "@/hooks/useChatRedux";
 import { useParams } from "next/navigation";
 
-function Page({ className }: CustomProps) {
+function Page(_params: CustomProps) {
     const params = useParams();
     const chatId = params['chat-id'] as string;
     const { getChat, setCurrentChatId, isTyping } = useChatRedux();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [messages, setMessages] = useState<any[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);

@@ -1,13 +1,16 @@
 'use client'
-import React, {useState, useCallback, useMemo} from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useSession } from "next-auth/react";
 import AddButton from "@/components/buttons/AddButton";
 import InputSearch from "@/components/InputSearch";
-import {CustomProps} from "@/types/common/CustomProps";
+import { CustomProps } from "@/types/common/CustomProps";
 import Image from "next/image";
 import Card from "@/components/Card";
+import AuthButtons from "@/components/auth/AuthButtons";
 
 
-function LeftSidebar({className}: CustomProps) {
+function LeftSidebar({ className }: CustomProps) {
+    const { data: session } = useSession();
     const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
     const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
     const [conversations, setConversations] = useState<Discussion[]>([
@@ -54,14 +57,14 @@ function LeftSidebar({className}: CustomProps) {
 
     const getRandomTopic = () => {
         const topics = [
-            {title: "Nouvelle conversation React", badge: "React", badgeColor: "bg-blue-500"},
-            {title: "Discussion JavaScript", badge: "JavaScript", badgeColor: "bg-yellow-500"},
-            {title: "Problème CSS", badge: "CSS", badgeColor: "bg-purple-500"},
-            {title: "Question Node.js", badge: "Backend", badgeColor: "bg-green-500"},
-            {title: "TypeScript Help", badge: "TypeScript", badgeColor: "bg-blue-600"},
-            {title: "Python Discussion", badge: "Python", badgeColor: "bg-green-600"},
-            {title: "Vue.js Question", badge: "Vue", badgeColor: "bg-emerald-500"},
-            {title: "Angular Problem", badge: "Angular", badgeColor: "bg-red-500"}
+            { title: "Nouvelle conversation React", badge: "React", badgeColor: "bg-blue-500" },
+            { title: "Discussion JavaScript", badge: "JavaScript", badgeColor: "bg-yellow-500" },
+            { title: "Problème CSS", badge: "CSS", badgeColor: "bg-purple-500" },
+            { title: "Question Node.js", badge: "Backend", badgeColor: "bg-green-500" },
+            { title: "TypeScript Help", badge: "TypeScript", badgeColor: "bg-blue-600" },
+            { title: "Python Discussion", badge: "Python", badgeColor: "bg-green-600" },
+            { title: "Vue.js Question", badge: "Vue", badgeColor: "bg-emerald-500" },
+            { title: "Angular Problem", badge: "Angular", badgeColor: "bg-red-500" }
         ];
         return topics[Math.floor(Math.random() * topics.length)];
     };
@@ -72,7 +75,7 @@ function LeftSidebar({className}: CustomProps) {
         // Retirer le flag isNew
         setConversations(prev =>
             prev.map(conv =>
-                conv.id === conversationId ? {...conv, isNew: false} : conv
+                conv.id === conversationId ? { ...conv, isNew: false } : conv
             )
         );
     }, []);
@@ -95,7 +98,7 @@ function LeftSidebar({className}: CustomProps) {
         setTimeout(() => {
             setConversations(prev =>
                 prev.map(conv =>
-                    conv.id === newId ? {...conv, isNew: false} : conv
+                    conv.id === newId ? { ...conv, isNew: false } : conv
                 )
             );
         }, 2000);
@@ -106,13 +109,11 @@ function LeftSidebar({className}: CustomProps) {
     }, []);
 
     return (
-        <div className={`${className} text-primary flex flex-col transition-all duration-300 ${
-            isCollapsed ? 'w-12' : 'w-[25%]'
-        } relative`}>
+        <div className={`${className} text-primary flex flex-col transition-all duration-300 ${isCollapsed ? 'w-12' : 'w-[25%]'
+            } relative`}>
 
-            <div className={`flex  border-b border-muted relative flex-col gap-4 ${
-                isCollapsed ? 'justify-center p-2' : 'justify-between  p-4'
-            }`}>
+            <div className={`flex  border-b border-muted relative flex-col gap-4 ${isCollapsed ? 'justify-center p-2' : 'justify-between  p-4'
+                }`}>
                 <div className={"flex  items-center justify-between w-full"}>
                     {!isCollapsed && (
 
@@ -120,27 +121,25 @@ function LeftSidebar({className}: CustomProps) {
                     )}
 
                     <div className="flex items-center ">
-                        <AddButton onClickEvent={handleAddNewConversation}/>
+                        <AddButton onClickEvent={handleAddNewConversation} />
                     </div>
                 </div>
 
 
                 <button
                     onClick={toggleCollapse}
-                    className={`text-muted-foreground hover:text-primary transition-colors p-1 absolute z-50 ${
-
-                        'top-10 -right-4 bg-background border-2 border-muted rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:shadow-xl hover:border-primary'
-                    }`}
+                    className={`text-muted-foreground hover:text-primary transition-colors p-1 absolute z-50 ${'top-10 -right-4 bg-background border-2 border-muted rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:shadow-xl hover:border-primary'
+                        }`}
                     title={isCollapsed ? "Étendre la sidebar" : "Réduire la sidebar"}
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d={isCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}/>
+                            d={isCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
                     </svg>
                 </button>
                 {!isCollapsed && (
                     <div className="w-full">
-                        <InputSearch/>
+                        <InputSearch />
                     </div>
                 )}
 
@@ -161,11 +160,9 @@ function LeftSidebar({className}: CustomProps) {
                                         handleCardClick(conversation.id);
                                     }}
                                     active={isSelected}
-                                    className={`transition-all duration-200 ${
-                                        isSelected ? 'shadow-lg' : 'shadow-sm'
-                                    } ${
-                                        conversation.isNew ? 'ring-2 ring-marker ring-opacity-50' : ''
-                                    }`}
+                                    className={`transition-all duration-200 ${isSelected ? 'shadow-lg' : 'shadow-sm'
+                                        } ${conversation.isNew ? 'ring-2 ring-marker ring-opacity-50' : ''
+                                        }`}
                                 >
                                     <Card.Header>
                                         <h3 className="text-sm font-medium text-sidebar-foreground line-clamp-2 flex-1">
@@ -177,10 +174,10 @@ function LeftSidebar({className}: CustomProps) {
                                     <Card.Footer className="opacity-95">
                                         <div className="flex items-center gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                 viewBox="0 0 24 24"
-                                                 fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                                                 strokeLinejoin="round" className="lucide lucide-message-square w-3 h-3"
-                                                 aria-hidden="true">
+                                                viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                                strokeLinejoin="round" className="lucide lucide-message-square w-3 h-3"
+                                                aria-hidden="true">
                                                 <path
                                                     d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path>
                                             </svg>
@@ -188,9 +185,9 @@ function LeftSidebar({className}: CustomProps) {
                                         </div>
                                         <div className="flex items-center">
                                             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24">
+                                                viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
                                             <span>{conversation.time}</span>
                                         </div>
@@ -207,16 +204,30 @@ function LeftSidebar({className}: CustomProps) {
                     <Card.Content className={`text-xs flex  gap-2 items-center 
                     }`}>
                         <Image
-                            src="/rubberduck_logo.png"
+                            src={session?.user?.image || "/rubberduck_logo.png"}
                             width={40}
                             height={40}
                             alt="profile"
                             className="shrink-0 rounded-full"
                         />
                         {!isCollapsed && (
-                            <p className="text-xl text-center">
-                                Username
-                            </p>
+                            <div className="flex flex-col overflow-hidden w-full">
+                                {session ? (
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-sm font-medium truncate">
+                                            {session.user?.name}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs text-muted-foreground truncate flex-1">
+                                                {session.user?.email}
+                                            </p>
+                                            <AuthButtons />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <AuthButtons />
+                                )}
+                            </div>
                         )}
                     </Card.Content>
                 </Card>
